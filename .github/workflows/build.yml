@@ -30,7 +30,9 @@ jobs:
           Write-Host "Found FFmpeg at: $($ffmpegPath.FullName)"
           New-Item -ItemType Directory -Force -Path internal/ffmpeg/binaries
           Copy-Item $ffmpegPath.FullName -Destination internal/ffmpeg/binaries/ffmpeg-windows.exe
-          Remove-Item -Recurse -Force ffmpeg.zip, ffmpeg-release-essentials
+          # 清理
+          Remove-Item -Recurse -Force ffmpeg.zip
+          Get-ChildItem -Directory | Where-Object { $_.Name -like "ffmpeg*" } | Remove-Item -Recurse -Force
 
       # 安装MinGW for GUI
       - name: Install MinGW
