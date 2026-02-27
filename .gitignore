@@ -1,0 +1,51 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+video_crop
+video_crop.exe
+video_crop_gui
+
+# macOS app bundle
+VideoCrop.app/
+*.app/
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+
+# Go workspace file
+go.work
+
+# Build directory
+build/
+dist/
+
+# Release files
+releases/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Claude Code settings
+.claude/
+
+# FFmpeg binaries (too large for git, but keep windows for building)
+internal/ffmpeg/binaries/ffmpeg-darwin-*
+internal/ffmpeg/binaries/ffmpeg-linux-*
+
+# Temporary files
+*.tmp
+*.log

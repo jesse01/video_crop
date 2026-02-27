@@ -1,0 +1,143 @@
+name: Build Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+
+      # 安装MinGW for GUI
+      - name: Install MinGW
+        run: choco install -y mingw
+
+      # 编译Windows GUI
+      - name: Build Windows GUI
+        shell: pwsh
+        run: |
+          $env:CGO_ENABLED = "1"
+          $env:CC = "gcc"
+          go build -tags gui -ldflags="-s -w -H windowsgui" -o video_crop_gui.exe .
+          Compress-Archive -Path video_crop_gui.exe -DestinationPath VideoCrop-Windows-x64-GUI.zip
+
+      # 编译Windows CLI
+      - name: Build Windows CLI
+        shell: pwsh
+        run: |
+          $env:CGO_ENABLED = "0"
+          go build -ldflags="-s -w" -o video_crop.exe .
+          Compress-Archive -Path video_crop.exe -DestinationPath video_crop-Windows-x64-CLI.zip
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-builds
+          path: |
+            VideoCrop-Windows-x64-GUI.zip
+            video_crop-Windows-x64-CLI.zip
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+
+      # 安装GUI依赖
+      - name: Install GLFW
+        run: brew install glfw
+
+      # 编译macOS GUI
+      - name: Build macOS GUI
+        run: |
+          mkdir -p VideoCrop.app/Contents/MacOS
+          cp build/Info.plist VideoCrop.app/Contents/Info.plist
+          CGO_ENABLED=1 go build -tags gui -o VideoCrop.app/Contents/MacOS/videocrop .
+          codesign --force --deep --sign - VideoCrop.app || true
+          zip -r VideoCrop-macOS-GUI.zip VideoCrop.app
+
+      # 编译macOS CLI
+      - name: Build macOS CLI
+        run: |
+          CGO_ENABLED=0 GOARCH=arm64 go build -ldflags="-s -w" -o video_crop-mac-arm64 .
+          zip video_crop-macOS-CLI.zip video_crop-mac-arm64
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-builds
+          path: |
+            VideoCrop-macOS-GUI.zip
+            video_crop-macOS-CLI.zip
+
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+
+      # 安装GUI依赖
+      - name: Install GUI dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc libgl1-mesa-dev libxcursor-dev libxi-dev libxinerama-dev libxrandr-dev libxtst-dev
+
+      # 编译Linux GUI
+      - name: Build Linux GUI
+        run: |
+          CGO_ENABLED=1 go build -tags gui -ldflags="-s -w" -o video_crop_gui .
+          tar czf VideoCrop-Linux-GUI.tar.gz video_crop_gui
+
+      # 编译Linux CLI
+      - name: Build Linux CLI
+        run: |
+          CGO_ENABLED=0 go build -ldflags="-s -w" -o video_crop-linux .
+          tar czf video_crop-Linux-CLI.tar.gz video_crop-linux
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-builds
+          path: |
+            VideoCrop-Linux-GUI.tar.gz
+            video_crop-Linux-CLI.tar.gz
+
+  release:
+    needs: [build-windows, build-macos, build-linux]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: artifacts/*/*
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
