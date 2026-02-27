@@ -17,6 +17,17 @@ jobs:
         with:
           go-version: '1.21'
 
+      # 下载 Windows FFmpeg
+      - name: Download FFmpeg for Windows
+        shell: pwsh
+        run: |
+          Write-Host "Downloading FFmpeg for Windows..."
+          $ffmpegUrl = "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip"
+          Invoke-WebRequest -Uri $ffmpegUrl -OutFile ffmpeg.zip
+          Expand-Archive -Path ffmpeg.zip -DestinationPath ffmpeg_temp
+          Copy-Item "ffmpeg_temp/ffmpeg-release-essentials/bin/ffmpeg.exe" -Destination "internal/ffmpeg/binaries/ffmpeg-windows.exe"
+          Remove-Item -Recurse -Force ffmpeg.zip, ffmpeg_temp
+
       # 安装MinGW for GUI
       - name: Install MinGW
         run: choco install -y mingw
@@ -56,6 +67,17 @@ jobs:
         with:
           go-version: '1.21'
 
+      # 下载 macOS FFmpeg
+      - name: Download FFmpeg for macOS
+        run: |
+          echo "Downloading FFmpeg for macOS..."
+          curl -L https://evermeet.cx/ffmpeg/getrelease/zip -o ffmpeg.zip
+          unzip ffmpeg.zip ffmpeg
+          chmod +x ffmpeg
+          mkdir -p internal/ffmpeg/binaries
+          mv ffmpeg internal/ffmpeg/binaries/ffmpeg-mac
+          rm ffmpeg.zip
+
       # 安装GUI依赖
       - name: Install GLFW
         run: brew install glfw
@@ -92,6 +114,17 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '1.21'
+
+      # 下载 Linux FFmpeg
+      - name: Download FFmpeg for Linux
+        run: |
+          echo "Downloading FFmpeg for Linux..."
+          wget -q https://johnvansickle.com/ffmpeg/builds/ffmpeg-git-amd64-static.tar.xz -O ffmpeg.tar.xz
+          tar xf ffmpeg.tar.xz
+          mkdir -p internal/ffmpeg/binaries
+          cp ffmpeg-git-*-amd64-static/ffmpeg internal/ffmpeg/binaries/ffmpeg-linux
+          chmod +x internal/ffmpeg/binaries/ffmpeg-linux
+          rm -rf ffmpeg-git-*-amd64-static ffmpeg.tar.xz
 
       # 安装GUI依赖
       - name: Install GUI dependencies
