@@ -24,9 +24,13 @@ jobs:
           Write-Host "Downloading FFmpeg for Windows..."
           $ffmpegUrl = "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip"
           Invoke-WebRequest -Uri $ffmpegUrl -OutFile ffmpeg.zip
-          Expand-Archive -Path ffmpeg.zip -DestinationPath ffmpeg_temp
-          Copy-Item "ffmpeg_temp/ffmpeg-release-essentials/bin/ffmpeg.exe" -Destination "internal/ffmpeg/binaries/ffmpeg-windows.exe"
-          Remove-Item -Recurse -Force ffmpeg.zip, ffmpeg_temp
+          Expand-Archive -Path ffmpeg.zip -DestinationPath .
+          # 查找并复制 ffmpeg.exe
+          $ffmpegPath = Get-ChildItem -Recurse -Filter ffmpeg.exe | Select-Object -First 1
+          Write-Host "Found FFmpeg at: $($ffmpegPath.FullName)"
+          New-Item -ItemType Directory -Force -Path internal/ffmpeg/binaries
+          Copy-Item $ffmpegPath.FullName -Destination internal/ffmpeg/binaries/ffmpeg-windows.exe
+          Remove-Item -Recurse -Force ffmpeg.zip, ffmpeg-release-essentials
 
       # 安装MinGW for GUI
       - name: Install MinGW
@@ -72,7 +76,7 @@ jobs:
         run: |
           echo "Downloading FFmpeg for macOS..."
           curl -L https://evermeet.cx/ffmpeg/getrelease/zip -o ffmpeg.zip
-          unzip ffmpeg.zip ffmpeg
+          unzip ffmpeg.zip
           chmod +x ffmpeg
           mkdir -p internal/ffmpeg/binaries
           mv ffmpeg internal/ffmpeg/binaries/ffmpeg-mac
