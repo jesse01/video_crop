@@ -90,7 +90,7 @@ jobs:
       - name: Build macOS GUI
         run: |
           mkdir -p VideoCrop.app/Contents/MacOS
-          cp build/Info.plist VideoCrop.app/Contents/Info.plist
+          cp resources/Info.plist VideoCrop.app/Contents/Info.plist
           CGO_ENABLED=1 go build -tags gui -o VideoCrop.app/Contents/MacOS/videocrop .
           codesign --force --deep --sign - VideoCrop.app || true
           zip -r VideoCrop-macOS-GUI.zip VideoCrop.app
@@ -134,7 +134,7 @@ jobs:
       - name: Install GUI dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y gcc libgl1-mesa-dev libxcursor-dev libxi-dev libxinerama-dev libxrandr-dev libxtst-dev
+          sudo apt-get install -y gcc libgl1-mesa-dev libxcursor-dev libxi-dev libxinerama-dev libxrandr-dev libxtst-dev libxxf86vm-dev
 
       # 编译Linux GUI
       - name: Build Linux GUI
